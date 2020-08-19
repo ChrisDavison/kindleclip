@@ -3,6 +3,29 @@ use std::path::PathBuf;
 
 type Result<T> = std::result::Result<T, Box<dyn ::std::error::Error>>;
 
+fn parse_myclippings(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
+    let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let boundary = "==========\r\n";
+    let contents = std::fs::read_to_string(filename)?;
+    let notes = contents.split(boundary);
+    for note in notes {
+        if let Some((title, tidied_note)) = parse_note(note) {
+            if !output.contains_key(&title) {
+                output.insert(title.clone(), Vec::new());
+            }
+            let entry = output
+                .get_mut(&title)
+                .expect("Should be impossible after insert above");
+            entry.push(tidied_note);
+        }
+    }
+    Ok(output)
+}
+
+fn parse_webexport(_filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
+    unimplemented!();
+}
+
 fn tidy_note_line(line: impl ToString) -> String {
     let linestr = line.to_string();
     if linestr.starts_with("- Your Highlight") {
@@ -27,25 +50,6 @@ fn parse_note(note: impl ToString) -> Option<(String, String)> {
     } else {
         Some((title, tidied_note))
     }
-}
-
-fn parse_clippings(filename: String) -> Result<BTreeMap<String, Vec<String>>> {
-    let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    let boundary = "==========\r\n";
-    let contents = std::fs::read_to_string(filename)?;
-    let notes = contents.split(boundary);
-    for note in notes {
-        if let Some((title, tidied_note)) = parse_note(note) {
-            if !output.contains_key(&title) {
-                output.insert(title.clone(), Vec::new());
-            }
-            let entry = output
-                .get_mut(&title)
-                .expect("Should be impossible after insert above");
-            entry.push(tidied_note);
-        }
-    }
-    Ok(output)
 }
 
 fn bookname_to_filename(bookname: impl ToString) -> String {
@@ -77,7 +81,24 @@ fn main() {
             std::process::exit(2);
         }
     }
-    if let Ok(clippings) = parse_clippings(clippings_fname) {
+
+    let ext = PathBuf::from(&clippings_fname)
+        .extension()
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
+    let parser = match ext.as_ref() {
+        "html" => parse_webexport,
+        "txt" =>  parse_myclippings,
+        _ => {
+            println!("Unsupported file format.");
+            println!("Want html saved from kindle library webpage,");
+            println!("or 'My Clippings.txt' from kindle memory.");
+            return;
+        },
+    };
+
+    if let Ok(clippings) = parser(&clippings_fname) {
         for (book, notes) in clippings {
             let mut output_filename = outdir.clone();
             output_filename.push(bookname_to_filename(&book) + ".txt");
