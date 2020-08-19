@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use regex::Regex;
+
 type Result<T> = std::result::Result<T, Box<dyn ::std::error::Error>>;
 
 fn parse_myclippings(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
@@ -22,8 +24,20 @@ fn parse_myclippings(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
     Ok(output)
 }
 
-fn parse_webexport(_filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
-    unimplemented!();
+fn parse_webexport(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
+    let contents = std::fs::read_to_string(filename)?;
+    let re_title = Regex::new(r#"<h3.*>(.*)</h3>"#).unwrap();
+    let title: String = re_title.captures_iter(&contents).take(1).map(|x| x[1].to_string()).collect();
+    let re_hi_or_note = Regex::new(r#"(?s)<span.*?id="(?:highlight|note)".*?>(.*?)</span>"#).unwrap();
+    let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    output.insert(title.clone(), vec![]);
+    for cap in re_hi_or_note.captures_iter(&contents) {
+        let entry = output
+            .get_mut(&title)
+            .expect("Should be impossible after insert above");
+        entry.push(cap[1].replace("\n", ""));
+    }
+    Ok(output)
 }
 
 fn tidy_note_line(line: impl ToString) -> String {
