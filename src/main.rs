@@ -27,8 +27,13 @@ fn parse_myclippings(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
 fn parse_webexport(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
     let contents = std::fs::read_to_string(filename)?;
     let re_title = Regex::new(r#"<h3.*>(.*)</h3>"#).unwrap();
-    let title: String = re_title.captures_iter(&contents).take(1).map(|x| x[1].to_string()).collect();
-    let re_hi_or_note = Regex::new(r#"(?s)<span.*?id="(?:highlight|note)".*?>(.*?)</span>"#).unwrap();
+    let title: String = re_title
+        .captures_iter(&contents)
+        .take(1)
+        .map(|x| x[1].to_string())
+        .collect();
+    let re_hi_or_note =
+        Regex::new(r#"(?s)<span.*?id="(?:highlight|note)".*?>(.*?)</span>"#).unwrap();
     let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
     output.insert(title.clone(), vec![]);
     for cap in re_hi_or_note.captures_iter(&contents) {
@@ -103,13 +108,13 @@ fn main() {
         .to_string();
     let parser = match ext.as_ref() {
         "html" => parse_webexport,
-        "txt" =>  parse_myclippings,
+        "txt" => parse_myclippings,
         _ => {
             println!("Unsupported file format.");
             println!("Want html saved from kindle library webpage,");
             println!("or 'My Clippings.txt' from kindle memory.");
             return;
-        },
+        }
     };
 
     if let Ok(clippings) = parser(&clippings_fname) {
