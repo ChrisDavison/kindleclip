@@ -1,11 +1,20 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use structopt::StructOpt;
+
 use regex::Regex;
+
+/// Parse a kindle 'My Clippings.txt', or saved webpage.
+#[derive(StructOpt, Debug)]
+struct Opts {
+    clippings_fname: PathBuf,
+    output_dir: PathBuf,
+}
 
 type Result<T> = std::result::Result<T, Box<dyn ::std::error::Error>>;
 
-fn parse_myclippings(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
+fn parse_myclippings(filename: &PathBuf) -> Result<BTreeMap<String, Vec<String>>> {
     let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let boundary = "==========\r\n";
     let contents = std::fs::read_to_string(filename)?;
@@ -24,7 +33,7 @@ fn parse_myclippings(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
     Ok(output)
 }
 
-fn parse_webexport(filename: &str) -> Result<BTreeMap<String, Vec<String>>> {
+fn parse_webexport(filename: &PathBuf) -> Result<BTreeMap<String, Vec<String>>> {
     let contents = std::fs::read_to_string(filename)?;
     let re_title = Regex::new(r#"<h3.*>(.*)</h3>"#).unwrap();
     let title: String = re_title
@@ -86,22 +95,16 @@ fn bookname_to_filename(bookname: impl ToString) -> String {
 }
 
 fn main() {
-    let progname: String = std::env::args().take(1).collect();
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.len() < 2 {
-        println!("usage: {} <clippings_fname> <output_dir>", progname);
-        std::process::exit(1)
-    }
-    let clippings_fname = args[0].to_string();
-    let outdir = PathBuf::from(&args[1]);
-    if !outdir.is_dir() {
-        if let Err(e) = std::fs::create_dir(&outdir) {
-            eprintln!("Failed to create output dir {:?}: {}", outdir, e);
+    let args = Opts::from_args();
+
+    if !args.output_dir.is_dir() {
+        if let Err(e) = std::fs::create_dir(&args.output_dir) {
+            eprintln!("Failed to create output dir {:?}: {}", args.output_dir, e);
             std::process::exit(2);
         }
     }
 
-    let ext = PathBuf::from(&clippings_fname)
+    let ext = PathBuf::from(&args.clippings_fname)
         .extension()
         .unwrap()
         .to_string_lossy()
@@ -117,9 +120,9 @@ fn main() {
         }
     };
 
-    if let Ok(clippings) = parser(&clippings_fname) {
+    if let Ok(clippings) = parser(&args.clippings_fname) {
         for (book, notes) in clippings {
-            let mut output_filename = outdir.clone();
+            let mut output_filename = args.output_dir.clone();
             output_filename.push(bookname_to_filename(&book) + ".txt");
             if let Err(e) = std::fs::write(&output_filename, notes.join("\n")) {
                 eprintln!("Failed to write file {:?}: {}", output_filename, e);
