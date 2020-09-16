@@ -12,7 +12,7 @@ struct Opts {
     output_dir: PathBuf,
 }
 
-type Result<T> = std::result::Result<T, Box<dyn ::std::error::Error>>;
+type Result<T> = std::result::Result<T, Box<dyn::std::error::Error>>;
 
 fn parse_myclippings(filename: &PathBuf) -> Result<BTreeMap<String, Vec<String>>> {
     let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -123,8 +123,9 @@ fn main() {
     if let Ok(clippings) = parser(&args.clippings_fname) {
         for (book, notes) in clippings {
             let mut output_filename = args.output_dir.clone();
-            output_filename.push(bookname_to_filename(&book) + ".txt");
-            if let Err(e) = std::fs::write(&output_filename, notes.join("\n")) {
+            output_filename.push(bookname_to_filename(&book) + ".org");
+            let header_and_notes = format!("#+TITLE: {}\n\n{}", book, notes.join("\n"));
+            if let Err(e) = std::fs::write(&output_filename, header_and_notes) {
                 eprintln!("Failed to write file {:?}: {}", output_filename, e);
             }
         }
