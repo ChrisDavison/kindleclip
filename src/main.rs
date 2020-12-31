@@ -12,7 +12,7 @@ struct Opts {
     output_dir: PathBuf,
 }
 
-type Result<T> = std::result::Result<T, Box<dyn::std::error::Error>>;
+type Result<T> = std::result::Result<T, Box<dyn ::std::error::Error>>;
 
 fn parse_myclippings(filename: &PathBuf) -> Result<BTreeMap<String, Vec<String>>> {
     let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -59,7 +59,7 @@ fn tidy_note_line(line: impl ToString) -> String {
     if linestr.starts_with("- Your Highlight") {
         "".to_string()
     } else if linestr.starts_with("- Your Note") {
-        "NOTE FOR PREV: ".to_string()
+        "NOTE FOR PREVIOUS HIGHLIGHT: ".to_string()
     } else {
         linestr + "\n"
     }
@@ -123,7 +123,7 @@ fn main() {
     if let Ok(clippings) = parser(&args.clippings_fname) {
         for (book, notes) in clippings {
             let mut output_filename = args.output_dir.clone();
-            output_filename.push(bookname_to_filename(&book) + ".org");
+            output_filename.push(bookname_to_filename(&book) + ".md");
             let header_and_notes = format!("#+TITLE: {}\n\n{}", book, notes.join("\n"));
             if let Err(e) = std::fs::write(&output_filename, header_and_notes) {
                 eprintln!("Failed to write file {:?}: {}", output_filename, e);
