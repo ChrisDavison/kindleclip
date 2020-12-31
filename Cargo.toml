@@ -12,3 +12,4 @@ repository = "https://github.com/chrisdavison/kindleclip"
 [dependencies]
 regex = "1"
 structopt = "0.3.0"
+anyhow = "1.0"
