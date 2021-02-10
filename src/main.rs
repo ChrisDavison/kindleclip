@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -6,9 +7,13 @@ use structopt::StructOpt;
 struct Opts {
     file: PathBuf,
     outdir: PathBuf,
+
+    /// Prompt for which book's notes to export
+    #[structopt(short, long)]
+    one_book: bool,
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Opts::from_args();
 
     if !args.outdir.is_dir() {
@@ -17,6 +22,7 @@ fn main() {
             std::process::exit(2);
         }
     }
+    dbg!(&args);
 
     let ext = PathBuf::from(&args.file)
         .extension()
@@ -30,21 +36,44 @@ fn main() {
             println!("Unsupported file format.");
             println!("Want html saved from kindle library webpage,");
             println!("or 'My Clippings.txt' from kindle storage.");
-            return;
+            return Err(anyhow!("Invalid file format"));
         }
     };
 
     let data = std::fs::read_to_string(&args.file).expect("Failed to read file");
     if let Ok(clippings) = parser(&data) {
-        for (book, notes) in clippings {
-            let mut output_filename = args.outdir.clone();
-            output_filename.push(bookname_to_filename(&book) + ".md");
-            let header_and_notes = format!("#+TITLE: {}\n\n{}", book, notes.join("\n"));
-            if let Err(e) = std::fs::write(&output_filename, header_and_notes) {
-                eprintln!("Failed to write file {:?}: {}", output_filename, e);
+        if args.one_book {
+            let keys: Vec<String> = clippings.keys().map(|x| x.to_string()).collect();
+            let book = choose_from_list(&keys)?;
+            let notes = clippings[&book].clone();
+            export_book_notes(book, notes, args.outdir.clone())?;
+        } else {
+            for (book, notes) in clippings {
+                export_book_notes(book, notes, args.outdir.clone())?;
             }
         }
     }
+    Ok(())
+}
+
+fn export_book_notes(book: String, notes: Vec<String>, outdir: PathBuf) -> Result<()> {
+    let mut output_filename = outdir;
+    output_filename.push(bookname_to_filename(&book) + ".md");
+    let header_and_notes = format!("# {}\n\n## Notes\n\n{}", book, notes.join("\n"));
+    std::fs::write(&output_filename, header_and_notes)
+        .with_context(|| format!("Failed to write file {:?}", output_filename))
+}
+
+fn choose_from_list(ls: &[impl ToString]) -> Result<String> {
+    for (i, key) in ls.iter().enumerate() {
+        println!("{}: {}", i, key.to_string());
+    }
+    let mut response = String::new();
+    if let Err(e) = std::io::stdin().read_line(&mut response) {
+        eprintln!("Failed to read response: {}", e);
+    }
+    let choice: usize = response.trim().parse()?;
+    Ok(ls[choice as usize].to_string())
 }
 
 fn tidy_note_line(line: &str) -> String {
@@ -110,7 +139,7 @@ mod parse {
         let title = lines
             .next()
             .map(|x| x.trim().trim_start_matches("\u{feff}"))
-            .unwrap();
+            .unwrap_or("");
         let tidied_note = lines.map(tidy_note_line).collect();
         if title.is_empty() {
             None
