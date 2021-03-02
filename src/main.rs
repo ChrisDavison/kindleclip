@@ -8,9 +8,9 @@ struct Opts {
     file: PathBuf,
     outdir: PathBuf,
 
-    /// Prompt for which book's notes to export
+    /// Prompt for which books' notes to export
     #[structopt(short, long)]
-    one_book: bool,
+    select: bool,
 }
 
 fn main() -> Result<()> {
@@ -42,21 +42,20 @@ fn main() -> Result<()> {
 
     let data = std::fs::read_to_string(&args.file).expect("Failed to read file");
     if let Ok(clippings) = parser(&data) {
-        if args.one_book {
+        let titles = if args.select {
             let keys: Vec<String> = clippings.keys().map(|x| x.to_string()).collect();
-            let book = choose_from_list(&keys)?;
-            let notes = clippings[&book].clone();
-            export_book_notes(book, notes, args.outdir.clone())?;
+            choose_from_list(&keys)?
         } else {
-            for (book, notes) in clippings {
-                export_book_notes(book, notes, args.outdir.clone())?;
-            }
+            clippings.keys().map(|x| x.to_string()).collect()
+        };
+        for title in titles {
+            export_book_notes(&title, &clippings[&title], args.outdir.clone())?;
         }
     }
     Ok(())
 }
 
-fn export_book_notes(book: String, notes: Vec<String>, outdir: PathBuf) -> Result<()> {
+fn export_book_notes(book: &str, notes: &Vec<String>, outdir: PathBuf) -> Result<()> {
     let mut output_filename = outdir;
     output_filename.push(bookname_to_filename(&book) + ".md");
     let header_and_notes = format!("# {}\n\n## Notes\n\n{}", book, notes.join("\n"));
@@ -64,7 +63,7 @@ fn export_book_notes(book: String, notes: Vec<String>, outdir: PathBuf) -> Resul
         .with_context(|| format!("Failed to write file {:?}", output_filename))
 }
 
-fn choose_from_list(ls: &[impl ToString]) -> Result<String> {
+fn choose_from_list(ls: &[impl ToString]) -> Result<Vec<String>> {
     for (i, key) in ls.iter().enumerate() {
         println!("{}: {}", i, key.to_string());
     }
@@ -72,8 +71,12 @@ fn choose_from_list(ls: &[impl ToString]) -> Result<String> {
     if let Err(e) = std::io::stdin().read_line(&mut response) {
         eprintln!("Failed to read response: {}", e);
     }
-    let choice: usize = response.trim().parse()?;
-    Ok(ls[choice as usize].to_string())
+    let mut books = Vec::new();
+    for choice in response.split(|c| " ,".contains(c)) {
+        let choice: usize = choice.trim().parse()?;
+        books.push(ls[choice].to_string());
+    }
+    Ok(books)
 }
 
 fn tidy_note_line(line: &str) -> String {
