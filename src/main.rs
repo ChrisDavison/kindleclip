@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn export_book_notes(book: &str, notes: &Vec<String>, outdir: PathBuf) -> Result<()> {
+fn export_book_notes(book: &str, notes: &[String], outdir: PathBuf) -> Result<()> {
     let mut output_filename = outdir;
     output_filename.push(bookname_to_filename(&book) + ".md");
     let header_and_notes = format!("# {}\n\n## Notes\n\n{}", book, notes.join("\n"));
@@ -113,7 +113,7 @@ mod parse {
         let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for note in data.split("==========\r\n") {
             if let Some((title, tidied_note)) = parse_note(note) {
-                let entry = output.entry(title).or_insert(vec![]);
+                let entry = output.entry(title).or_insert_with(Vec::new);
                 entry.push(tidied_note);
             }
         }
@@ -131,7 +131,7 @@ mod parse {
             Regex::new(r#"(?s)<span.*?id="(?:highlight|note)".*?>(.*?)</span>"#).unwrap();
         let mut output: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for cap in re_hi_or_note.captures_iter(&data) {
-            let entry = output.entry(title.clone()).or_insert(vec![]);
+            let entry = output.entry(title.clone()).or_insert_with(Vec::new);
             entry.push(cap[1].replace("\n", ""));
         }
         Ok(output)
@@ -141,7 +141,7 @@ mod parse {
         let mut lines = note.lines();
         let title = lines
             .next()
-            .map(|x| x.trim().trim_start_matches("\u{feff}"))
+            .map(|x| x.trim().trim_start_matches('\u{feff}'))
             .unwrap_or("");
         let tidied_note = lines.map(tidy_note_line).collect();
         if title.is_empty() {
