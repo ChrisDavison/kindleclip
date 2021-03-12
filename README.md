@@ -1,5 +1,7 @@
 # kindleclip 
 
+[![Rust](https://github.com/ChrisDavison/kindleclip/actions/workflows/rust.yml/badge.svg)](https://github.com/ChrisDavison/kindleclip/actions/workflows/rust.yml)
+
 Extract a file per book in your kindle `My Clippings.txt`.
 
 Usage:
