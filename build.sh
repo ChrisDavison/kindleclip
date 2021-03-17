@@ -26,28 +26,28 @@ TARGETS
 gh_release() {
     gh release create "v${VERSION}" --title "Release ${VERSION}" target/${TARGET_WIN}/release/${BIN_NAME}.exe target/${TARGET_LINUX}/release/${BIN_NAME}
 	git fetch --tags origin
-	rm VERSION
+}
+
+build_linux(){
+    cargo build --release --target=$TARGET_LINUX 
+}
+
+build_win(){
+    cargo build --release --target=$TARGET_WIN 
 }
 
 
 case $1 in
-    build_linux) 
-        cargo build --release --target=$TARGET_LINUX ;;
-    debug_linux) 
-        cargo build  --target=$TARGET_LINUX ;;
-    build_win) 
-        cargo build --release --target=$TARGET_WIN ;;
-    debug_win) 
-        cargo build  --target=$TARGET_WIN ;;
-    check) 
-        cargo watch -x check ;;
-    install) 
-        cargo install --path . --force ;;
-    publish)
-        cargo publish ;;
-    name)
-        echo $BIN_NAME ;; 
-    release) gh_release ;;
+    build) build_linux && build_win ;;
+    build_linux) build_linux ;;
+    build_win) build_win ;;
+    debug_linux) cargo build  --target=$TARGET_LINUX ;;
+    debug_win) cargo build  --target=$TARGET_WIN ;;
+    check) cargo watch -x check ;;
+    install) cargo install --path . --force ;;
+    publish) cargo publish ;;
+    name) echo $BIN_NAME ;; 
+    release) build_linux && build_win && gh_release ;;
     *) 
         echo "$USAGE" ;;
 esac

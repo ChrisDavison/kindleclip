@@ -46,14 +46,13 @@ fn try_main() -> Result<()> {
     let data =
         std::fs::read_to_string(&args.file).with_context(|| "Failed to read clippings file")?;
 
-    if let Ok(clippings) = parser(&data) {
-        let mut titles: Vec<String> = clippings.keys().map(|x| x.to_string()).collect();
-        if args.select {
-            titles = util::choose_from_list(&titles)?;
-        }
-        for title in titles {
-            export_book_notes(&title, &clippings[&title], &args.outdir)?;
-        }
+    let clippings = parser(&data).with_context(|| "Failed to parse clippings.")?;
+    let mut titles: Vec<String> = clippings.keys().map(|x| x.to_string()).collect();
+    if args.select {
+        titles = util::choose_from_list(&titles)?;
+    }
+    for title in titles {
+        export_book_notes(&title, &clippings[&title], &args.outdir)?;
     }
     Ok(())
 }
