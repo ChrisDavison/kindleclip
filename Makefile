@@ -3,8 +3,7 @@ TARGET_WINDOWS:=x86_64-pc-windows-gnu
 BIN_NAME:=$(shell grep name Cargo.toml | sed -e 's/.* = "\(.*\)"/\1/')
 BIN_WIN:=target/${TARGET_WIN}/release/${BIN_NAME}.exe
 BIN_LINUX:=target/${TARGET_LINUX}/release/${BIN_NAME}
-
-VERSION:=$(shell grep version Cargo.toml | sed -e 's/.* = "\(.*\)"/\1/')
+VERSION:=$(shell grep version Cargo.toml | sed -e 's/.* = "\(.*\)"/\1/' | head -n1)
 SRC=$(wildcard **/*.rs)
 
 .PHONY: build build_linux build_windows
