@@ -1,7 +1,11 @@
 use anyhow::{Context, Result};
 
-pub fn choose_from_list(ls: &[impl ToString]) -> Result<Vec<String>> {
-    for (i, key) in ls.iter().enumerate() {
+pub fn choose_from_list(ls: &[impl ToString], filter: Option<String>) -> Result<Vec<String>> {
+    let matching: Vec<_> = ls.iter().filter(|key| match filter {
+        None => true,
+        Some(ref f) => key.to_string().to_lowercase().contains(f),
+    }).collect();
+    for (i, key) in matching.iter().enumerate() {
         println!("{}: {}", i, key.to_string());
     }
     let mut response = String::new();
@@ -14,7 +18,7 @@ pub fn choose_from_list(ls: &[impl ToString]) -> Result<Vec<String>> {
             .trim()
             .parse()
             .with_context(|| format!("Failed to parse book choice `{}`", choice))?;
-        books.push(ls[choice].to_string());
+        books.push(matching[choice].to_string());
     }
     Ok(books)
 }

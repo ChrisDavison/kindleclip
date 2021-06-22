@@ -1,19 +1,32 @@
 use anyhow::{anyhow, Context, Result};
-use clap::Clap;
 use std::path::PathBuf;
+use structopt::StructOpt;
 
 mod parse;
 mod util;
 
 /// Parse a kindle 'My Clippings.txt', or saved webpage.
-#[derive(Clap, Debug)]
+#[derive(StructOpt, Debug)]
+#[structopt(name = "kindleclip")]
 struct Opts {
     file: PathBuf,
     outdir: PathBuf,
 
     /// Prompt for which books' notes to export
-    #[clap(short, long)]
+    #[structopt(short, long)]
     select: bool,
+
+    /// Filter for titles (implies select)
+    #[structopt(long)]
+    filter: Option<String>,
+
+    /// Export as list, rather than paragraphs
+    #[structopt(short, long)]
+    list: bool,
+
+    /// markdown or org
+    #[structopt(short, long)]
+    format: Option<String>,
 }
 
 fn main() {
@@ -24,13 +37,12 @@ fn main() {
 }
 
 fn try_main() -> Result<()> {
-    let args = Opts::parse();
+    let args = Opts::from_args();
 
     if !args.outdir.is_dir() {
         std::fs::create_dir(&args.outdir)
             .with_context(|| anyhow!("Failed to create output dir {:?}", args.outdir))?;
     }
-    dbg!(&args);
 
     let parser = match args.file.extension().and_then(|x| x.to_str()) {
         Some("html") => parse::webexport,
@@ -48,19 +60,50 @@ fn try_main() -> Result<()> {
 
     let clippings = parser(&data).with_context(|| "Failed to parse clippings.")?;
     let mut titles: Vec<String> = clippings.keys().map(|x| x.to_string()).collect();
-    if args.select {
-        titles = util::choose_from_list(&titles)?;
+    if args.select || args.filter.is_some() {
+        titles = util::choose_from_list(&titles, args.filter)?;
     }
+    let fmt = args.format;
     for title in titles {
-        export_book_notes(&title, &clippings[&title], &args.outdir)?;
+        export_book_notes(
+            &title,
+            &clippings[&title],
+            &args.outdir,
+            fmt.clone(),
+            args.list,
+        )?;
     }
     Ok(())
 }
 
-fn export_book_notes(book: &str, notes: &[String], outdir: &PathBuf) -> Result<()> {
+fn export_book_notes(
+    book: &str,
+    notes: &[String],
+    outdir: &PathBuf,
+    format: Option<String>,
+    as_list: bool,
+) -> Result<()> {
+    let notes = if as_list {
+        notes
+            .iter()
+            .map(|n| format!("- {}", n.trim()))
+            .collect::<Vec<String>>()
+            .join("\n")
+    } else {
+        notes.join("\n")
+    };
+
     let mut output_filename = outdir.clone();
-    output_filename.push(title_as_filename(&book) + ".md");
-    let header_and_notes = format!("# {}\n\n## Notes\n\n{}", book, notes.join("\n"));
+    let header_and_notes = match format.as_deref() {
+        Some("org") => {
+            output_filename.push(title_as_filename(&book) + ".org");
+            format!("#+TITLE: {}\n\n* Notes\n\n{}", book, notes)
+        }
+        Some("markdown" | "md") | _ => {
+            output_filename.push(title_as_filename(&book) + ".md");
+            format!("# {}\n\n## Notes\n\n{}", book, notes)
+        }
+    };
     std::fs::write(&output_filename, header_and_notes)
         .with_context(|| format!("Failed to write file {:?}", output_filename))
 }
