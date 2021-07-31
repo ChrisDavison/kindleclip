@@ -78,22 +78,26 @@ fn try_main() -> Result<()> {
 
 fn export_book_notes(
     book: &str,
-    notes: &[String],
+    notes: &[parse::Note],
     outdir: &PathBuf,
     format: Option<String>,
     as_list: bool,
 ) -> Result<()> {
-    let notes = if as_list {
-        notes
-            .iter()
-            .map(|n| format!("- {}", n.trim()))
-            .collect::<Vec<String>>()
-            .join("\n")
+    let (joiner, start, start_comment) = if as_list {
+        ("\n", "- ", "    - NOTE: ")
     } else {
-        notes.join("\n")
+        ("\n\n", "", "NOTE: ")
     };
-
+    let notes = notes
+        .iter()
+        .map(|n| match n {
+            parse::Note::Highlight(h) => format!("{}{}", start, h),
+            parse::Note::Comment(c) => format!("{}{}", start_comment, c),
+        })
+        .collect::<Vec<String>>()
+        .join(joiner);
     let mut output_filename = outdir.clone();
+
     let header_and_notes = match format.as_deref() {
         Some("org") => {
             output_filename.push(title_as_filename(&book) + ".org");
