@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use regex::Regex;
 use std::collections::BTreeMap;
 
+#[derive(Debug)]
 pub enum Note {
     Highlight(String),
     Comment(String),
@@ -43,26 +44,32 @@ pub fn webexport(data: &str) -> Result<BTreeMap<String, Vec<Note>>> {
     Ok(output)
 }
 
+// a 'note' is anything between the '====' in a `My Clippings.txt`
 pub fn parse_note(note: &str) -> Option<(String, Note)> {
     let mut lines = note.lines();
     let title = lines
         .next()
-        .map(|x| x.trim().trim_start_matches('\u{feff}'))
-        .unwrap_or("");
-    let tidied_note = lines.map(tidy_note_line).nth(0).unwrap();
-    if title.is_empty() {
-        None
-    } else {
-        Some((title.to_string(), tidied_note))
-    }
-}
-
-fn tidy_note_line(line: &str) -> Note {
-    if line.starts_with("- Your Highlight") {
-        Note::Highlight(String::new())
-    } else if line.starts_with("- Your Note") {
-        Note::Comment("NOTE FOR PREVIOUS HIGHLIGHT: ".to_string())
-    } else {
-        Note::Highlight(format!("{}\n", line))
+        .map(|x| x.trim().trim_start_matches('\u{feff}'));
+    let is_highlight = lines
+        .next()
+        .filter(|x| x.starts_with("- Your Highlight"))
+        .is_some();
+    let note = lines
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect::<String>()
+        .trim()
+        .to_string();
+    match title {
+        None => None,
+        Some(t) => {
+            if note.is_empty() {
+                None
+            } else if is_highlight {
+                Some((t.to_string(), Note::Highlight(note)))
+            } else {
+                Some((t.to_string(), Note::Comment(note)))
+            }
+        }
     }
 }

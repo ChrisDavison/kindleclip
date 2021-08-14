@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 mod parse;
@@ -79,7 +79,7 @@ fn try_main() -> Result<()> {
 fn export_book_notes(
     book: &str,
     notes: &[parse::Note],
-    outdir: &PathBuf,
+    outdir: &Path,
     format: Option<String>,
     as_list: bool,
 ) -> Result<()> {
@@ -96,14 +96,18 @@ fn export_book_notes(
         })
         .collect::<Vec<String>>()
         .join(joiner);
-    let mut output_filename = outdir.clone();
+    let mut output_filename: PathBuf = outdir.into();
 
     let header_and_notes = match format.as_deref() {
         Some("org") => {
             output_filename.push(title_as_filename(&book) + ".org");
             format!("#+TITLE: {}\n\n* Notes\n\n{}", book, notes)
         }
-        Some("markdown" | "md") | _ => {
+        Some("markdown" | "md") => {
+            output_filename.push(title_as_filename(&book) + ".md");
+            format!("# {}\n\n## Notes\n\n{}", book, notes)
+        }
+        _ => {
             output_filename.push(title_as_filename(&book) + ".md");
             format!("# {}\n\n## Notes\n\n{}", book, notes)
         }
