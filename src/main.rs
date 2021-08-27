@@ -2,8 +2,12 @@ use anyhow::{anyhow, Context, Result};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-mod parse;
+mod my_clippings;
+mod note;
 mod util;
+mod web_export;
+
+use note::Highlight;
 
 /// Parse a kindle 'My Clippings.txt', or saved webpage.
 #[derive(StructOpt, Debug)]
@@ -23,10 +27,6 @@ struct Opts {
     /// Export as list, rather than paragraphs
     #[structopt(short, long)]
     list: bool,
-
-    /// markdown or org
-    #[structopt(short, long)]
-    format: Option<String>,
 }
 
 fn main() {
@@ -45,8 +45,8 @@ fn try_main() -> Result<()> {
     }
 
     let parser = match args.file.extension().and_then(|x| x.to_str()) {
-        Some("html") => parse::webexport,
-        Some("txt") => parse::myclippings,
+        Some("html") | Some("htm") => web_export::parse,
+        Some("txt") => my_clippings::parse,
         _ => {
             println!("Unsupported file format.");
             println!("Want html saved from kindle library webpage,");
@@ -63,69 +63,24 @@ fn try_main() -> Result<()> {
     if args.select || args.filter.is_some() {
         titles = util::choose_from_list(&titles, args.filter)?;
     }
-    let fmt = args.format;
     for title in titles {
-        export_book_notes(
-            &title,
-            &clippings[&title],
-            &args.outdir,
-            fmt.clone(),
-            args.list,
-        )?;
+        export_book_notes(&title, &clippings[&title], &args.outdir, args.list)?;
     }
     Ok(())
 }
 
-fn export_book_notes(
-    book: &str,
-    notes: &[parse::Note],
-    outdir: &Path,
-    format: Option<String>,
-    as_list: bool,
-) -> Result<()> {
-    let (joiner, start, start_comment) = if as_list {
-        ("\n", "- ", "    - NOTE: ")
-    } else {
-        ("\n\n", "", "NOTE: ")
-    };
+fn export_book_notes(book: &str, notes: &[Highlight], outdir: &Path, as_list: bool) -> Result<()> {
+    let (joiner, start) = if as_list { ("\n", "- ") } else { ("\n\n", "") };
+    let filestem = notes[0].filestem();
     let notes = notes
         .iter()
-        .map(|n| match n {
-            parse::Note::Highlight(h) => format!("{}{}", start, h),
-            parse::Note::Comment(c) => format!("{}{}", start_comment, c),
-        })
+        .map(|n| format!("{}{}", start, n))
         .collect::<Vec<String>>()
         .join(joiner);
     let mut output_filename: PathBuf = outdir.into();
 
-    let header_and_notes = match format.as_deref() {
-        Some("org") => {
-            output_filename.push(title_as_filename(&book) + ".org");
-            format!("#+TITLE: {}\n\n* Notes\n\n{}", book, notes)
-        }
-        Some("markdown" | "md") => {
-            output_filename.push(title_as_filename(&book) + ".md");
-            format!("# {}\n\n## Notes\n\n{}", book, notes)
-        }
-        _ => {
-            output_filename.push(title_as_filename(&book) + ".md");
-            format!("# {}\n\n## Notes\n\n{}", book, notes)
-        }
-    };
-    std::fs::write(&output_filename, header_and_notes)
+    output_filename.push(filestem + ".md");
+    let notes = format!("# {}\n\n## Notes\n\n{}", book, notes);
+    std::fs::write(&output_filename, notes)
         .with_context(|| format!("Failed to write file {:?}", output_filename))
-}
-
-fn title_as_filename(bookname: impl ToString) -> String {
-    let bad_chars = vec!['(', ')', ',', ':'];
-    let letter_tidier = |letter| {
-        if bad_chars.contains(&letter) {
-            "".to_string()
-        } else if letter == ' ' {
-            "-".to_string()
-        } else {
-            letter.to_lowercase().to_string()
-        }
-    };
-    bookname.to_string().chars().map(letter_tidier).collect()
 }
