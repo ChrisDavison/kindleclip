@@ -7,7 +7,7 @@ pub fn parse(data: &str) -> Result<HashMap<String, Vec<Highlight>>> {
     for note in data.split("==========\r\n") {
         if let Ok(highlight) = parse_note(note) {
             let entry = output
-                .entry(highlight.name.clone())
+                .entry(highlight.name.to_string())
                 .or_insert_with(Vec::new);
             entry.push(highlight);
         }
@@ -29,10 +29,11 @@ fn parse_note(note: &str) -> Result<Highlight> {
     let idx_page = metadata_line.find("on page ").map(|x| x + 8);
     let idx_location = metadata_line.find("at location ").map(|x| x + 12);
     let i1 = idx_page.or(idx_location).expect("No page or location");
-    let i2 = metadata_line.find('|').expect("No separation between page and date");
+    let i2 = metadata_line
+        .find('|')
+        .expect("No separation between page and date");
     let pages: Vec<_> = metadata_line[i1..i2 - 1]
         .split('-')
-        .map(|x| x.to_string())
         .collect();
 
     let date_start = metadata_line.find("Added on").expect("No date") + 9;
@@ -53,21 +54,21 @@ fn parse_note(note: &str) -> Result<Highlight> {
     }
 
     Ok(Highlight {
-        name: title.to_string(),
+        name: title,
         highlight_type: if is_highlight {
             HighlightType::Highlight
         } else {
             HighlightType::Comment
         },
         pages: [
-            pages[0].clone(),
+            pages[0],
             if pages.len() > 1 {
-                pages[1].clone()
+                pages[1]
             } else {
-                pages[0].clone()
+                pages[0]
             },
         ],
-        date_added: added_on.to_string(),
+        date_added: added_on,
         highlight: note,
     })
 }

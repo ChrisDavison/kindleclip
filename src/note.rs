@@ -1,9 +1,9 @@
 #[derive(Debug)]
-pub struct Highlight {
-    pub name: String,
+pub struct Highlight<'a> {
+    pub name: &'a str,
     pub highlight_type: HighlightType,
-    pub pages: [String; 2],
-    pub date_added: String,
+    pub pages: [&'a str; 2],
+    pub date_added: &'a str,
     pub highlight: String,
 }
 
@@ -13,17 +13,17 @@ pub enum HighlightType {
     Comment,
 }
 
-impl std::fmt::Display for Highlight {
+impl<'a> std::fmt::Display for Highlight<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         let prefix = match self.highlight_type {
-        HighlightType::Highlight => "",
-        HighlightType::Comment => "NOTE: ",
+            HighlightType::Highlight => "",
+            HighlightType::Comment => "NOTE: ",
         };
         write!(f, "{}{}", prefix, self.highlight.replace("\r", ""))
     }
 }
 
-impl Highlight {
+impl<'a> Highlight<'a> {
     pub fn filestem(&self) -> String {
         let bad_chars = vec!['(', ')', ',', ':'];
         let letter_tidier = |letter| {
