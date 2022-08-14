@@ -17,7 +17,7 @@ fn get_h3_title(data: &str) -> Result<&str> {
     Ok(title)
 }
 
-pub fn parse(data: &str) -> Result<HashMap<String, Vec<Highlight>>> {
+pub fn parse(data: &str) -> Result<(HashMap<String, Vec<Highlight>>, Vec<String>)> {
     let title = get_h3_title(data)?;
     let re_hi_or_note = Regex::new(r#"(?s)<span.*?id="(highlight|note)".*?>(.*?)</span>"#)
         .with_context(|| "Failed to create regex for webexport highlight/note")?;
@@ -40,14 +40,11 @@ pub fn parse(data: &str) -> Result<HashMap<String, Vec<Highlight>>> {
             })
         }
     }
-    Ok(output)
+    Ok((output, vec![title.to_string()]))
 }
 
 #[test]
 fn find_title_test() {
-    let re_title = Regex::new(r#"<h3.*>(.*)</h3>"#)
-        .with_context(|| "Failed to create regex for webexport title")
-        .unwrap();
     let tmp = "<h3 blah>this is the title</h3>";
     assert_eq!("this is the title", get_h3_title(tmp).unwrap());
 }

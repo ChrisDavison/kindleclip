@@ -2,17 +2,29 @@ use crate::note::*;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
-pub fn parse(data: &str) -> Result<HashMap<String, Vec<Highlight>>> {
+pub fn parse(data: &str) -> Result<(HashMap<String, Vec<Highlight>>, Vec<String>)> {
     let mut output: HashMap<String, Vec<Highlight>> = HashMap::new();
-    for note in data.split("==========\r\n") {
+    let mut titles_last_seen_indice: HashMap<String, usize> = HashMap::new();
+    for (i, note) in data.split("==========\r\n").enumerate() {
         if let Ok(highlight) = parse_note(note) {
+            let to_insert = match titles_last_seen_indice.remove(highlight.name) {
+                Some(c) => c,
+                None => i,
+            };
+            titles_last_seen_indice.insert(highlight.name.to_string(), to_insert);
             let entry = output
                 .entry(highlight.name.to_string())
                 .or_insert_with(Vec::new);
             entry.push(highlight);
         }
     }
-    Ok(output)
+    let mut ordered_titles: Vec<(usize, String)> = titles_last_seen_indice
+        .iter()
+        .map(|(k, v)| (v.clone(), k.clone()))
+        .collect();
+    ordered_titles.sort();
+    let only_ordered_titles: Vec<String> = ordered_titles.iter().map(|(_, k)| k.clone()).collect();
+    Ok((output, only_ordered_titles))
 }
 
 fn parse_note(note: &str) -> Result<Highlight> {
@@ -32,9 +44,7 @@ fn parse_note(note: &str) -> Result<Highlight> {
     let i2 = metadata_line
         .find('|')
         .expect("No separation between page and date");
-    let pages: Vec<_> = metadata_line[i1..i2 - 1]
-        .split('-')
-        .collect();
+    let pages: Vec<_> = metadata_line[i1..i2 - 1].split('-').collect();
 
     let date_start = metadata_line.find("Added on").expect("No date") + 9;
     let added_on = &metadata_line[date_start..];
@@ -60,14 +70,7 @@ fn parse_note(note: &str) -> Result<Highlight> {
         } else {
             HighlightType::Comment
         },
-        pages: [
-            pages[0],
-            if pages.len() > 1 {
-                pages[1]
-            } else {
-                pages[0]
-            },
-        ],
+        pages: [pages[0], if pages.len() > 1 { pages[1] } else { pages[0] }],
         date_added: added_on,
         highlight: note,
     })
