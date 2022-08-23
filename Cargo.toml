@@ -3,7 +3,7 @@ name = "kindleclip"
 version = "0.9.0"
 authors = ["Chris Davison <c.jr.davison@gmail.com>"]
 edition = "2018"
-license = "GPL-3.0-only"
+license = "MIT"
 description = "CLI tool to export a file per book in kindle 'My Clippings.txt'"
 repository = "https://github.com/chrisdavison/kindleclip"
 
