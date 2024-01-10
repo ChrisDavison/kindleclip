@@ -1,0 +1,11 @@
+[project]
+name = "kindleclip"
+version = "0.1.0"
+authors = [
+    {name = "Chris Davison", email = "c.jr.davison@gmail.com"}
+]
+description = "Parse highlights from Kindle's `My Clippings.txt` into Markdown"
+readme = "README.md"
+
+[project.scripts]
+kindleclip = "kindleclip:main_cli"
