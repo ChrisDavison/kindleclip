@@ -1,3 +1,5 @@
+pub type BookNotes<'a> = std::collections::HashMap<String, Vec<Highlight<'a>>>;
+
 #[derive(Debug)]
 pub struct Highlight<'a> {
     pub name: &'a str,
@@ -19,13 +21,13 @@ impl<'a> std::fmt::Display for Highlight<'a> {
             HighlightType::Highlight => "",
             HighlightType::Comment => "NOTE: ",
         };
-        write!(f, "{}{}", prefix, self.highlight.replace("\r", ""))
+        write!(f, "{}{}", prefix, self.highlight.replace('\r', ""))
     }
 }
 
 impl<'a> Highlight<'a> {
     pub fn filestem(&self) -> String {
-        let bad_chars = vec!['(', ')', ',', ':'];
+        let bad_chars = ['(', ')', ',', ':'];
         let letter_tidier = |letter| {
             if bad_chars.contains(&letter) {
                 "".to_string()

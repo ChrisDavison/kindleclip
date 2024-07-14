@@ -2,7 +2,8 @@ use crate::note::*;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
-pub fn parse(data: &str) -> Result<(HashMap<String, Vec<Highlight>>, Vec<String>)> {
+
+pub fn parse(data: &str) -> Result<(BookNotes, Vec<String>)> {
     let mut output: HashMap<String, Vec<Highlight>> = HashMap::new();
     let mut titles_last_seen_indice: HashMap<String, usize> = HashMap::new();
     for (i, note) in data.split("==========\r\n").enumerate() {
@@ -14,13 +15,13 @@ pub fn parse(data: &str) -> Result<(HashMap<String, Vec<Highlight>>, Vec<String>
             titles_last_seen_indice.insert(highlight.name.to_string(), to_insert);
             let entry = output
                 .entry(highlight.name.to_string())
-                .or_insert_with(Vec::new);
+                .or_default();
             entry.push(highlight);
         }
     }
     let mut ordered_titles: Vec<(usize, String)> = titles_last_seen_indice
         .iter()
-        .map(|(k, v)| (v.clone(), k.clone()))
+        .map(|(k, v)| (*v, k.clone()))
         .collect();
     ordered_titles.sort();
     let only_ordered_titles: Vec<String> = ordered_titles.iter().map(|(_, k)| k.clone()).collect();

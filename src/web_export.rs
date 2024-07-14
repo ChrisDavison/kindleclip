@@ -17,14 +17,14 @@ fn get_h3_title(data: &str) -> Result<&str> {
     Ok(title)
 }
 
-pub fn parse(data: &str) -> Result<(HashMap<String, Vec<Highlight>>, Vec<String>)> {
+pub fn parse(data: &str) -> Result<(BookNotes, Vec<String>)> {
     let title = get_h3_title(data)?;
     let re_hi_or_note = Regex::new(r#"(?s)<span.*?id="(highlight|note)".*?>(.*?)</span>"#)
         .with_context(|| "Failed to create regex for webexport highlight/note")?;
     let mut output: HashMap<String, Vec<Highlight>> = HashMap::new();
     for cap in re_hi_or_note.captures_iter(data) {
-        let entry = output.entry(title.to_string()).or_insert_with(Vec::new);
-        let tidy_entry = cap[2].replace("\r", "").replace("\n", "");
+        let entry = output.entry(title.to_string()).or_default();
+        let tidy_entry = cap[2].replace(['\r', '\n'], " ");
         if !tidy_entry.is_empty() {
             let highlight_type = match &cap[1] {
                 "highlight" => HighlightType::Highlight,
