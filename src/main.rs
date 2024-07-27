@@ -1,13 +1,11 @@
 use anyhow::{anyhow, Context, Result};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 mod my_clippings;
 mod note;
 mod util;
 mod web_export;
-
-use note::Highlight;
 
 /// Parse a kindle 'My Clippings.txt', or saved webpage.
 #[derive(StructOpt, Debug)]
@@ -58,31 +56,21 @@ fn try_main() -> Result<()> {
     let data =
         std::fs::read_to_string(&args.file).with_context(|| "Failed to read clippings file")?;
 
-    let (clippings, mru_ordered_titles) =
-        parser(&data).with_context(|| "Failed to parse clippings.")?;
-    // let mut titles: Vec<String> = clippings.keys().map(|x| x.to_string()).collect();
-    let mut titles = mru_ordered_titles.clone();
+    let clippings = parser(&data).with_context(|| "Failed to parse clippings.")?;
+    let mut title_and_mru: Vec<_> = clippings
+        .iter()
+        .map(|(title, notes)| (notes.mru_indice, title))
+        .collect();
+    title_and_mru.sort();
+    let mut titles: Vec<String> = title_and_mru
+        .iter()
+        .map(|(_, title)| title.to_string())
+        .collect();
     if args.select || args.filter.is_some() {
-        titles = util::choose_from_list(&mru_ordered_titles, args.filter)?;
+        titles = util::choose_from_list(&titles, args.filter)?;
     }
     for title in titles {
-        export_book_notes(&title, &clippings[&title], &args.outdir, args.list)?;
+        clippings[&title].export(&args.outdir, args.list)?;
     }
     Ok(())
-}
-
-fn export_book_notes(book: &str, notes: &[Highlight], outdir: &Path, as_list: bool) -> Result<()> {
-    let (joiner, start) = if as_list { ("\n", "- ") } else { ("\n\n", "") };
-    let filestem = notes[0].filestem();
-    let notes = notes
-        .iter()
-        .map(|n| format!("{}{}", start, n))
-        .collect::<Vec<String>>()
-        .join(joiner);
-    let mut output_filename: PathBuf = outdir.into();
-
-    output_filename.push(filestem + ".md");
-    let notes = format!("# {}\n\n## Notes\n\n{}", book, notes);
-    std::fs::write(&output_filename, notes)
-        .with_context(|| format!("Failed to write file {:?}", output_filename))
 }

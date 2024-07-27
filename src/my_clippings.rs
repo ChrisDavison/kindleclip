@@ -2,33 +2,23 @@ use crate::note::*;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
-
-pub fn parse(data: &str) -> Result<(BookNotes, Vec<String>)> {
-    let mut output: HashMap<String, Vec<Highlight>> = HashMap::new();
-    let mut titles_last_seen_indice: HashMap<String, usize> = HashMap::new();
+pub fn parse(data: &str) -> Result<BooknoteMap> {
+    let mut output: BooknoteMap = HashMap::new();
     for (i, note) in data.split("==========\r\n").enumerate() {
-        if let Ok(highlight) = parse_note(note) {
-            let to_insert = match titles_last_seen_indice.remove(highlight.name) {
-                Some(c) => c,
-                None => i,
-            };
-            titles_last_seen_indice.insert(highlight.name.to_string(), to_insert);
-            let entry = output
-                .entry(highlight.name.to_string())
-                .or_default();
-            entry.push(highlight);
+        match parse_note(note) {
+            Ok((title, highlight)) => {
+                let entry = output.entry(title.to_string()).or_default();
+                entry.title = title;
+                entry.highlights.push(highlight);
+                entry.mru_indice = i;
+            }
+            Err(e) => eprintln!("PARSE FAIL: {e}\n{note}"),
         }
     }
-    let mut ordered_titles: Vec<(usize, String)> = titles_last_seen_indice
-        .iter()
-        .map(|(k, v)| (*v, k.clone()))
-        .collect();
-    ordered_titles.sort();
-    let only_ordered_titles: Vec<String> = ordered_titles.iter().map(|(_, k)| k.clone()).collect();
-    Ok((output, only_ordered_titles))
+    Ok(output)
 }
 
-fn parse_note(note: &str) -> Result<Highlight> {
+fn parse_note(note: &str) -> Result<(String, Highlight)> {
     if note.is_empty() {
         return Err(anyhow!("Empty"));
     }
@@ -64,15 +54,17 @@ fn parse_note(note: &str) -> Result<Highlight> {
         println!("`{}`", metadata_line);
     }
 
-    Ok(Highlight {
-        name: title,
-        highlight_type: if is_highlight {
-            HighlightType::Highlight
-        } else {
-            HighlightType::Comment
+    Ok((
+        title.to_string(),
+        Highlight {
+            highlight_type: if is_highlight {
+                HighlightType::Highlight
+            } else {
+                HighlightType::Comment
+            },
+            pages: [pages[0], if pages.len() > 1 { pages[1] } else { pages[0] }],
+            date_added: added_on,
+            highlight: note,
         },
-        pages: [pages[0], if pages.len() > 1 { pages[1] } else { pages[0] }],
-        date_added: added_on,
-        highlight: note,
-    })
+    ))
 }

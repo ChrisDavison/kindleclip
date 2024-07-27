@@ -17,12 +17,12 @@ fn get_h3_title(data: &str) -> Result<&str> {
     Ok(title)
 }
 
-pub fn parse(data: &str) -> Result<(BookNotes, Vec<String>)> {
+pub fn parse(data: &str) -> Result<BooknoteMap> {
     let title = get_h3_title(data)?;
     let re_hi_or_note = Regex::new(r#"(?s)<span.*?id="(highlight|note)".*?>(.*?)</span>"#)
         .with_context(|| "Failed to create regex for webexport highlight/note")?;
-    let mut output: HashMap<String, Vec<Highlight>> = HashMap::new();
-    for cap in re_hi_or_note.captures_iter(data) {
+    let mut output: BooknoteMap = HashMap::new();
+    for (i, cap) in re_hi_or_note.captures_iter(data).enumerate() {
         let entry = output.entry(title.to_string()).or_default();
         let tidy_entry = cap[2].replace(['\r', '\n'], " ");
         if !tidy_entry.is_empty() {
@@ -31,8 +31,9 @@ pub fn parse(data: &str) -> Result<(BookNotes, Vec<String>)> {
                 "note" => HighlightType::Comment,
                 _ => unreachable!(),
             };
-            entry.push(Highlight {
-                name: title,
+            entry.title = title.to_string();
+            entry.mru_indice = i;
+            entry.highlights.push(Highlight {
                 highlight_type,
                 pages: ["", ""],
                 date_added: "",
@@ -40,7 +41,7 @@ pub fn parse(data: &str) -> Result<(BookNotes, Vec<String>)> {
             })
         }
     }
-    Ok((output, vec![title.to_string()]))
+    Ok(output)
 }
 
 #[test]
