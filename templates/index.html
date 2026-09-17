@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kindleclip</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+<h1>Books</h1>
+<nav>
+  {% if sort == "alpha" %}
+  <a href="/">sort by recency</a>
+  {% else %}
+  <a href="/?sort=alpha">sort alphabetically</a>
+  {% endif %}
+  <a href="/import">import sources</a>
+  <a class="btn" href="/download/all">download all (.zip)</a>
+  <button id="clear-marks" type="button">clear export marks</button>
+</nav>
+</header>
+{% if books.is_empty() %}
+<p>No books found. <a href="/import">Import</a> a clippings file.</p>
+{% endif %}
+<ul class="book-list">
+{% for b in books %}
+  <li class="book">
+    <a class="book-title" href="/book/{{ b.id }}">{{ b.title }}</a>
+    {% if !b.author.is_empty() %}<span class="author">{{ b.author }}</span>{% endif %}
+    <div class="meta">
+      {{ b.count }} clipping{% if b.count != 1 %}s{% endif %}
+      {% if !b.latest.is_empty() %} &middot; latest {{ b.latest }}{% endif %}
+      {% if !b.sources.is_empty() %} &middot; {{ b.sources }}{% endif %}
+    </div>
+  </li>
+{% endfor %}
+</ul>
+<script src="/static/app.js"></script>
+</body>
+</html>

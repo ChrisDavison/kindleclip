@@ -1,0 +1,47 @@
+{
+  "created_on": 1757900000,
+  "version": "20240901",
+  "documents": [
+    {
+      "title": "Meditations",
+      "author": "Gregory Hays",
+      "entries": [
+        {
+          "page": 41,
+          "time": 1757100300,
+          "text": "You have power over your mind - not outside events. Realize this, and you will find strength.",
+          "chapter": "Book II",
+          "sort": "highlight"
+        },
+        {
+          "page": 53,
+          "time": 1757200000,
+          "text": "If it is not right do not do it; if it is not true do not say it.",
+          "note": "Marcus quoting his teacher. Fits the honesty thread.",
+          "chapter": "Book XII",
+          "sort": "highlight"
+        }
+      ]
+    },
+    {
+      "title": "Project Hail Mary",
+      "author": "Andy Weir",
+      "entries": [
+        {
+          "page": 117,
+          "time": 1757300000,
+          "text": "I penetrated the outer cell membrane with a nanosyringe.",
+          "sort": "highlight"
+        },
+        {
+          "page": 214,
+          "time": 1757400000,
+          "text": "Humanity isn't alone.",
+          "note": "Chills every time.",
+          "chapter": "EVA",
+          "sort": "highlight"
+        }
+      ]
+    }
+  ]
+}
