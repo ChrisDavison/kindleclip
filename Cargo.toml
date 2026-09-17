@@ -1,8 +1,8 @@
 [package]
 name = "kindleclip"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Chris Davison <c.jr.davison@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 description = "CLI tool to export a file per book in kindle 'My Clippings.txt'"
 repository = "https://github.com/chrisdavison/kindleclip"
@@ -14,3 +14,14 @@ regex = "1"
 structopt = "0.3"
 anyhow = "1.0"
 skim = "0.10.4"
+axum = { version = "0.8", features = ["multipart"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+askama = "0.12"
+chrono = { version = "0.4", features = ["serde"] }
+zip = "0.6"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

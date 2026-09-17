@@ -1,0 +1,32 @@
+:root { --line: #ddd; --muted: #777; --accent: #0a6e4f; }
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; margin: 0 auto; padding: 1rem; max-width: 52rem; color: #222; }
+a { color: var(--accent); }
+header nav { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+h1 { margin: 0.2rem 0; }
+.book-list { list-style: none; padding: 0; }
+.book-list li { border: 1px solid var(--line); border-radius: 6px; padding: 0.6rem 0.9rem; margin-bottom: 0.5rem; }
+.book-title { font-weight: 600; text-decoration: none; }
+.author { color: var(--muted); margin-left: 0.5rem; }
+.book .meta, .book-header .author { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+.badge { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 0 0.5rem; font-size: 0.7rem; color: var(--muted); vertical-align: middle; white-space: nowrap; }
+.badge.note-badge { border-color: #e0a000; color: #8a6400; }
+.cluster { border: 1px solid var(--line); border-radius: 6px; margin-bottom: 1.2rem; padding: 0.6rem 0.9rem; }
+.cluster-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.cluster-head h2 { margin: 0.2rem 0 0.6rem; font-size: 1.05rem; }
+.cluster-tools { display: flex; gap: 0.4rem; }
+.clipping { border-top: 1px solid var(--line); padding: 0.6rem 0; }
+.clipping:first-of-type { border-top: 0; }
+.clipping.ignored { opacity: 0.35; }
+body.show-ignored .clipping.ignored { opacity: 0.8; outline: 1px dashed #bbb; }
+.clip-main { display: flex; gap: 0.5rem; align-items: flex-start; }
+.clip-text { white-space: pre-wrap; flex: 1; }
+.clip-note { color: #8a6400; white-space: pre-wrap; margin: 0.3rem 0 0 1.6rem; font-size: 0.9rem; }
+.clip-meta { color: var(--muted); font-size: 0.8rem; margin: 0.3rem 0 0 1.6rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+.clip-actions { display: flex; gap: 0.5rem; margin: 0.4rem 0 0 1.6rem; align-items: flex-start; flex-wrap: wrap; }
+textarea.annotation { flex: 1; min-width: 12rem; font: inherit; padding: 0.3rem; }
+.clipping[draggable="true"] { cursor: grab; }
+.actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.6rem 0; align-items: center; }
+.btn { border: 1px solid var(--line); border-radius: 4px; padding: 0.25rem 0.6rem; text-decoration: none; }
+button { font: inherit; }
+form input { margin-right: 0.6rem; }

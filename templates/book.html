@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-book-id="{{ book_id }}">
+<header>
+  <p><a href="/">&larr; all books</a></p>
+  <h1>{{ title }}</h1>
+  {% if !author.is_empty() %}<p class="author">{{ author }}</p>{% endif %}
+  <div class="actions">
+    <a class="btn" href="/download/book/{{ book_id }}">download book</a>
+    <a class="btn" href="/download/book/{{ book_id }}?marked=1">download marked (<span id="marked-count">{{ marked_count }}</span>)</a>
+    <button id="toggle-ignored" type="button">show ignored</button>
+    <button id="create-cluster" type="button">new cluster</button>
+  </div>
+</header>
+<main>
+{% for c in clusters %}
+<section class="cluster" data-cluster-id="{{ c.id }}">
+  <div class="cluster-head">
+    <h2>{{ c.name }}</h2>
+    <span class="cluster-tools">
+      <button class="rename-cluster" data-id="{{ c.id }}" type="button">rename</button>
+      <button class="delete-cluster" data-id="{{ c.id }}" type="button">delete</button>
+    </span>
+  </div>
+  {% for item in c.items %}
+  <article class="clipping{% if item.ignored %} ignored{% endif %}" data-id="{{ item.id }}" draggable="{% if item.in_cluster %}true{% else %}false{% endif %}">
+    <div class="clip-main">
+      <input type="checkbox" class="mark" title="mark for export"{% if item.marked %} checked{% endif %}>
+      <span class="badge">{{ item.source_label }}</span>
+      {% if item.is_note %}<span class="badge note-badge">note</span>{% endif %}
+      <div class="clip-text">{{ item.text }}</div>
+    </div>
+    {% if !item.note.is_empty() %}<div class="clip-note">NOTE: {{ item.note }}</div>{% endif %}
+    <div class="clip-meta">
+      {% if !item.location.is_empty() %}<span>{{ item.location }}</span>{% endif %}
+      {% if !item.chapter.is_empty() %}<span>{{ item.chapter }}</span>{% endif %}
+      {% if !item.added.is_empty() %}<span>{{ item.added }}</span>{% endif %}
+    </div>
+    <div class="clip-actions">
+      <textarea class="annotation" placeholder="annotation" rows="2">{{ item.annotation }}</textarea>
+      <button class="ignore-btn" type="button">{% if item.ignored %}unignore{% else %}ignore{% endif %}</button>
+      {% if item.in_cluster %}<button class="unassign" type="button">remove from cluster</button>{% endif %}
+      <select class="cluster-select">
+        <option value="">add to cluster&hellip;</option>
+        {% for cl in item.cluster_options %}
+        <option value="{{ cl.id }}"{% if cl.member %} selected{% endif %}>{{ cl.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endfor %}
+<section class="cluster unclustered">
+  <div class="cluster-head"><h2>Unclustered</h2></div>
+  {% for item in unclustered %}
+  <article class="clipping{% if item.ignored %} ignored{% endif %}" data-id="{{ item.id }}" draggable="{% if item.in_cluster %}true{% else %}false{% endif %}">
+    <div class="clip-main">
+      <input type="checkbox" class="mark" title="mark for export"{% if item.marked %} checked{% endif %}>
+      <span class="badge">{{ item.source_label }}</span>
+      {% if item.is_note %}<span class="badge note-badge">note</span>{% endif %}
+      <div class="clip-text">{{ item.text }}</div>
+    </div>
+    {% if !item.note.is_empty() %}<div class="clip-note">NOTE: {{ item.note }}</div>{% endif %}
+    <div class="clip-meta">
+      {% if !item.location.is_empty() %}<span>{{ item.location }}</span>{% endif %}
+      {% if !item.chapter.is_empty() %}<span>{{ item.chapter }}</span>{% endif %}
+      {% if !item.added.is_empty() %}<span>{{ item.added }}</span>{% endif %}
+    </div>
+    <div class="clip-actions">
+      <textarea class="annotation" placeholder="annotation" rows="2">{{ item.annotation }}</textarea>
+      <button class="ignore-btn" type="button">{% if item.ignored %}unignore{% else %}ignore{% endif %}</button>
+      {% if item.in_cluster %}<button class="unassign" type="button">remove from cluster</button>{% endif %}
+      <select class="cluster-select">
+        <option value="">add to cluster&hellip;</option>
+        {% for cl in item.cluster_options %}
+        <option value="{{ cl.id }}"{% if cl.member %} selected{% endif %}>{{ cl.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

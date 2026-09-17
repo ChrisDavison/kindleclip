@@ -1,18 +1,37 @@
 use anyhow::{anyhow, Context, Result};
+use state::BookState;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+mod export;
+mod koreader_json;
+mod model;
 mod my_clippings;
-mod note;
+mod server;
+mod state;
 mod util;
 mod web_export;
 
-/// Parse a kindle 'My Clippings.txt', or saved webpage.
+/// Parse a kindle 'My Clippings.txt', a saved kindle library web page, or a
+/// KOReader JSON highlight export.
 #[derive(StructOpt, Debug)]
 #[structopt(name = "kindleclip")]
-struct Opts {
-    file: PathBuf,
-    outdir: PathBuf,
+pub struct Opts {
+    /// Run the web server instead of exporting
+    #[structopt(long)]
+    pub serve: bool,
+
+    /// (serve) Port to listen on
+    #[structopt(long, default_value = "8080")]
+    pub port: u16,
+
+    /// (serve) Address to bind
+    #[structopt(long, default_value = "127.0.0.1")]
+    pub bind: String,
+
+    /// (serve) State file location (defaults to beside the first source)
+    #[structopt(long)]
+    pub state: Option<PathBuf>,
 
     /// Prompt for which books' notes to export
     #[structopt(short, long)]
@@ -25,6 +44,9 @@ struct Opts {
     /// Export as list, rather than paragraphs
     #[structopt(short, long)]
     list: bool,
+
+    /// '<file> <outdir>' when exporting, one or more '<file>...' with --serve
+    pub files: Vec<PathBuf>,
 }
 
 fn main() {
@@ -36,41 +58,56 @@ fn main() {
 
 fn try_main() -> Result<()> {
     let args = Opts::from_args();
+    if args.serve {
+        let runtime = tokio::runtime::Runtime::new()
+            .with_context(|| "Failed to start tokio runtime")?;
+        runtime.block_on(server::run(args))
+    } else {
+        export_mode(args)
+    }
+}
 
-    if !args.outdir.is_dir() {
-        std::fs::create_dir(&args.outdir)
-            .with_context(|| anyhow!("Failed to create output dir {:?}", args.outdir))?;
+fn export_mode(args: Opts) -> Result<()> {
+    if args.files.len() != 2 {
+        return Err(anyhow!(
+            "Expected exactly two arguments: <clipping_file> <output_dir>\n\
+             Run with --serve to start the web server instead."
+        ));
+    }
+    let file = args.files[0].clone();
+    let outdir = args.files[1].clone();
+
+    if !outdir.is_dir() {
+        std::fs::create_dir(&outdir)
+            .with_context(|| anyhow!("Failed to create output dir {:?}", outdir))?;
     }
 
-    let parser = match args.file.extension().and_then(|x| x.to_str()) {
-        Some("html") | Some("htm") => web_export::parse,
-        Some("txt") => my_clippings::parse,
-        _ => {
-            println!("Unsupported file format.");
-            println!("Want html saved from kindle library webpage,");
-            println!("or 'My Clippings.txt' from kindle storage.");
-            return Err(anyhow!("Invalid file format"));
-        }
-    };
-
     let data =
-        std::fs::read_to_string(&args.file).with_context(|| "Failed to read clippings file")?;
+        std::fs::read_to_string(&file).with_context(|| "Failed to read clippings file")?;
 
-    let clippings = parser(&data).with_context(|| "Failed to parse clippings.")?;
-    let mut title_and_mru: Vec<_> = clippings
-        .iter()
-        .map(|(title, notes)| (notes.mru_indice, title))
-        .collect();
-    title_and_mru.sort();
-    let mut titles: Vec<String> = title_and_mru
-        .iter()
-        .map(|(_, title)| title.to_string())
-        .collect();
+    let mut books = model::parse_source(&file, &data)
+        .with_context(|| "Failed to parse clippings.")?;
+
+    // Books ordered by most-recent-entry, matching the previous behaviour.
+    books.sort_by(|a, b| {
+        (a.last_pos, a.title.as_str()).cmp(&(b.last_pos, b.title.as_str()))
+    });
+    let mut titles: Vec<String> = books.iter().map(|b| b.title.clone()).collect();
     if args.select || args.filter.is_some() {
         titles = util::choose_from_list(&titles, args.filter)?;
     }
-    for title in titles {
-        clippings[&title].export(&args.outdir, args.list)?;
+    let chosen: std::collections::HashSet<String> = titles.into_iter().collect();
+    let empty_state = BookState::default();
+    let opts = export::ExportOpts {
+        as_list: args.list,
+        only_marked: false,
+    };
+    for book in books.iter().filter(|b| chosen.contains(&b.title)) {
+        let body = export::render_book(book, &empty_state, &opts);
+        let mut output_filename: PathBuf = outdir.clone();
+        output_filename.push(format!("{}.md", book.filestem()));
+        std::fs::write(&output_filename, body)
+            .with_context(|| anyhow!("Failed to write file {:?}", output_filename))?;
     }
     Ok(())
 }
