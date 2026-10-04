@@ -10,10 +10,10 @@
 <h1>Import sources</h1>
 <p>Upload a <code>My Clippings.txt</code> from Kindle storage, a saved Kindle
 library web page (<code>.html</code>), or a KOReader JSON highlight export
-(<code>.json</code>). Books with the same title are merged and identical
+(<code>.json</code>) or metadata file (<code>.lua</code>). Books with the same title are merged and identical
 clippings are deduplicated.</p>
 <form method="post" action="/import" enctype="multipart/form-data">
-  <input type="file" name="file" accept=".txt,.html,.htm,.json" multiple>
+  <input type="file" name="file" accept=".txt,.html,.htm,.json,.lua" multiple>
   <button type="submit">Import</button>
 </form>
 <p><a href="/">Back to books</a></p>

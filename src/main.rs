@@ -5,6 +5,7 @@ use structopt::StructOpt;
 
 mod export;
 mod koreader_json;
+mod koreader_lua;
 mod model;
 mod my_clippings;
 mod server;
@@ -13,7 +14,7 @@ mod util;
 mod web_export;
 
 /// Parse a kindle 'My Clippings.txt', a saved kindle library web page, or a
-/// KOReader JSON highlight export.
+/// KOReader JSON highlight export or Lua metadata file.
 #[derive(StructOpt, Debug)]
 #[structopt(name = "kindleclip")]
 pub struct Opts {

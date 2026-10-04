@@ -22,7 +22,7 @@ Flags:
 - `--list` export as a bulleted list rather than paragraphs
 
 Sources can be a Kindle `My Clippings.txt` (`.txt`), a saved Kindle library
-web page (`.html`), or a KOReader JSON highlight export (`.json`).
+web page (`.html`), or a KOReader JSON highlight export (`.json`), or KOReader metadata (`.lua`).
 
 ## Web server
 
@@ -65,6 +65,12 @@ On the device: Tools > Export highlights > Choose Formats, enable Json, then
 "Export all notes in this book" or "Export all notes in your library" (the
 library export contains every book in one file). Copy the file somewhere the
 server can read it and pass it as a source, or upload it at `/import`.
+
+You can also copy `metadata.epub.lua` (or another `metadata.*.lua` file)
+from a book’s `.sdr` directory and import it directly. Highlights, attached
+notes, pages, chapters and dates are preserved. Metadata must contain
+`doc_props.title` and an `annotations` table. Lua is parsed as data and never
+executed. Dates have no timezone in this format and are treated as UTC.
 
 ### Security
 

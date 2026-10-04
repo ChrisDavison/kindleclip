@@ -132,9 +132,10 @@ pub fn parse_source(path: &Path, data: &str) -> Result<Vec<Book>> {
         Some("txt") => crate::my_clippings::parse(data),
         Some("html") | Some("htm") => crate::web_export::parse(data),
         Some("json") => crate::koreader_json::parse(data),
+        Some("lua") => crate::koreader_lua::parse(data),
         other => Err(anyhow!(
             "Unsupported file format {:?} ({}): want .txt (My Clippings.txt), \
-             .html (saved Kindle library page) or .json (KOReader export)",
+             .html (saved Kindle library page) .json (KOReader export) or .lua (KOReader metadata)",
             other.unwrap_or(""),
             path.display()
         )),
